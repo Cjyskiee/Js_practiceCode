@@ -1,0 +1,21 @@
+{
+  "name": "js_practice",
+  "version": "1.0.0",
+  "description": "A practice for backend",
+  "license": "ISC",
+  "author": "Cj",
+  "type": "module",
+  "main": "backend/src/index.js",
+  "scripts": {
+    "start": "node backend/src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "nodemon": "^3.1.14",
+    "pg": "^8.23.0"
+  }
+}
