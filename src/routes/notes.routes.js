@@ -14,8 +14,9 @@ router.post('/', verifyToken, async (req, res) => {
     }
 
     try {
+        const userID = req.user.id;
         const postNote = await dbpool.query(
-            'INSERT INTO notes (title, context) VALUES ($1, $2) RETURNING *', [title, context,]
+            'INSERT INTO notes (title, context, user_id) VALUES ($1, $2, $3) RETURNING *', [title, context, userID]
         );
         console.log(`Succefully created Note ${title}`);
         res.status(201).json(postNote.rows[0]);
@@ -35,8 +36,9 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 
     try {
+        const userID = req.user.id;
         const putUpdate = await dbpool.query(
-            'UPDATE notes SET title = $1, context = $2 WHERE ID = $3 RETURNING *', [title, context, id]
+            'UPDATE notes SET title = $1, context = $2 WHERE user_id = $3 AND id = $4 RETURNING *', [title, context, userID, id]
         );
         if (putUpdate.rows.length === 0) {
             return res.status(404).json({error: "Note not found."});
@@ -52,8 +54,9 @@ router.put('/:id', verifyToken, async (req, res) => {
 router.get('/', verifyToken, async (req, res) => {
 
     try {
+        const userID = req.user.id;
         const getNotes = await dbpool.query(
-            'SELECT * FROM notes ORDER BY created_ad DESC');
+            'SELECT * FROM notes WHERE user_id = $1 ORDER BY created_at DESC', [userID]);
             res.json(getNotes.rows);
     } catch (err) {
         console.error(err);
@@ -67,8 +70,9 @@ router.get('/:id', verifyToken,  async (req, res) => {
     const { id } = req.params;
 
     try {
+        const userID = req.user.id;
          const getNoteId =  await dbpool.query(
-            'SELECT * FROM notes WHERE id = $1', [id]
+            'SELECT * FROM notes WHERE user_id = $1 AND id = $2', [userID, id]
         );
         if (getNoteId.rows.length === 0){
             return res.status(404).json({ error: "Note not found" });
@@ -85,8 +89,9 @@ router.delete('/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
 
     try {
+        const userID = req.user.id;
         const deleteNote = await dbpool.query(
-            'DELETE FROM notes WHERE id = $1 RETURNING *', [id]
+            'DELETE FROM notes WHERE user_id = $1 AND id = $2 RETURNING *', [userID, id]
         );
         if(deleteNote.rows.length === 0){
             return res.status(404).json({ error: "Note not found" });
