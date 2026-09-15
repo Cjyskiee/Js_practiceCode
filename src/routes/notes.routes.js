@@ -32,7 +32,7 @@ router.put('/:id', verifyToken, async (req, res) => {
     const{ id } = req.params;
     const{ title, context } = req.body;
     if (!id){
-        return res.status(400).json({ error: "Id does not exist!!" });
+        return res.status(400).json({ error: "Note does not exist!!" });
     }
 
     try {
@@ -50,6 +50,53 @@ router.put('/:id', verifyToken, async (req, res) => {
         res.status(500).json({ error: "Server Error" });
     }
 });
+
+
+router.patch("/:id", verifyToken, async (req, res) => {
+
+    const { id } = req.params;  
+    const { title, context } = req.body;
+    const updateField = [];
+    const valueField = [];
+    if(title){
+       updateField.push(`title = $${updateField.length + 1}`); //append the value "title = $1" to the array
+       valueField.push(title); // add the value of the title
+    }
+    if(context){
+        updateField.push(`context = $${updateField.length + 1}`);
+        valueField.push(context);
+    }
+
+    const setName_SQL = updateField.join(', '); // will join the array into a single string
+
+    
+    if (updateField.length === 0) {
+        return res.status(400).json({ error: "No fields provided to update" });
+    }
+    try {
+        const userID = req.user.id;  
+        valueField.push(id);
+        valueField.push(userID);
+
+        const userIdPlaceholder = `$${valueField.length}`; 
+        const idPlaceholder = `$${valueField.length - 1}`; 
+
+        const $query = 
+            `UPDATE notes SET ${setName_SQL} WHERE user_id = ${userIdPlaceholder} AND id = ${idPlaceholder} RETURNING *`;
+
+        const patchUpdate = await dbpool.query($query, valueField);
+
+        if(patchUpdate.rows.length === 0){
+            res.status(404).json({ error: "Note not found" });
+        }
+        
+        res.json(patchUpdate.rows[0]);
+        console.log("Succefully Updated!!")
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Server Error!" });
+    }
+})
 
 router.get('/', verifyToken, async (req, res) => {
 
