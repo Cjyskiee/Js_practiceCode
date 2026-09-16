@@ -101,11 +101,24 @@ router.patch("/:id", verifyToken, async (req, res) => {
 
 router.get('/', verifyToken, async (req, res) => {
 
+
+    const { page = 1, limit = 10 } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);  // nothing goes bug even if input is negative
+    const maxLimit = Math.max(1, parseInt(limit, 10) || 10);
+
+    const limitNum = Math.min(maxLimit, 100);
+
+    const offset = (pageNum - 1) * limitNum;
+
     try {
         const userID = req.user.id;
+
         const getNotes = await dbpool.query(
-            'SELECT * FROM notes WHERE user_id = $1 ORDER BY created_at DESC', [userID]);
+            'SELECT * FROM notes WHERE user_id = $1 ORDER BY created_at DESC OFFSET $2 LIMIT $3', [userID, offset, limitNum]);
+            
             res.json(getNotes.rows);
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Server Error" });
