@@ -67,16 +67,17 @@ router.patch("/:id", verifyToken, async (req, res) => {
         valueField.push(context);
     }
 
-    const setName_SQL = updateField.join(', '); // will join the array into a single string
-
     
     if (updateField.length === 0) {
         return res.status(400).json({ error: "No fields provided to update" });
+
     }
     try {
         const userID = req.user.id;  
         valueField.push(id);
         valueField.push(userID);
+
+        const setName_SQL = updateField.join(', '); // will join the array into a single string
 
         const userIdPlaceholder = `$${valueField.length}`; 
         const idPlaceholder = `$${valueField.length - 1}`; 
@@ -87,7 +88,7 @@ router.patch("/:id", verifyToken, async (req, res) => {
         const patchUpdate = await dbpool.query($query, valueField);
 
         if(patchUpdate.rows.length === 0){
-            res.status(404).json({ error: "Note not found" });
+            return res.status(404).json({ error: "Note not found" });
         }
         
         res.json(patchUpdate.rows[0]);
