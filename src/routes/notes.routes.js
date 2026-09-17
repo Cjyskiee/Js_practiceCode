@@ -101,6 +101,7 @@ router.patch("/:id", verifyToken, async (req, res) => {
 
 router.get('/', verifyToken, async (req, res) => {
 
+    const { search } = req.query;
 
     const { page = 1, limit = 10 } = req.query;
 
@@ -111,19 +112,37 @@ router.get('/', verifyToken, async (req, res) => {
 
     const offset = (pageNum - 1) * limitNum;
 
-    try {
-        const userID = req.user.id;
 
-        const getNotes = await dbpool.query(
-            'SELECT * FROM notes WHERE user_id = $1 ORDER BY created_at DESC OFFSET $2 LIMIT $3', [userID, offset, limitNum]);
+    const userID = req.user.id;
+
+    //uses dynamic query for future updates and maintenace.
+
+        try {
+            let query = 'SELECT * FROM notes WHERE user_id = $1 ';
+            const queryValues = [userID];
+
+            if (search){
+                queryValues.push(`%${search}%`)
+                query += `AND title ILIKE $${queryValues.length} `;
+            }
+
+            queryValues.push(offset, limitNum);
             
-            res.json(getNotes.rows);
+            const offsetPlaceholder = `$${queryValues.length - 1}`; 
+            const limitPlaceholder = `$${queryValues.length}`;
 
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Server Error" });
-    }
+            query += `ORDER BY created_at DESC OFFSET ${offsetPlaceholder} LIMIT ${limitPlaceholder}`;
 
+            
+            const get_searchNotes = await dbpool.query(query, queryValues);
+            if(get_searchNotes.rows.length === 0){
+                return res.status(404).json({ error: "Note not found"});
+            }
+            res.json(get_searchNotes.rows);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: "Server Error"});
+        }
 });
 
 router.get('/:id', verifyToken,  async (req, res) => {
